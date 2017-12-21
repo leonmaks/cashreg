@@ -273,8 +273,7 @@ def create_repl_objects(ctx, **kwargs):
         # Create client repl table
         ctx["cli"]["stmt"] += _dbu.m.db_table_ddl(
             ctx["cli"]["conn"], table_name, col_defs_ + [__REPL_COL_ID, __REPL_COL_OP, __REPL_COL_CREATE_DT],
-            None, None, table_prefix=__CLI_REPL_TABLE_PFX, **kwargs,
-        )
+            None, None, table_prefix=__CLI_REPL_TABLE_PFX, **kwargs)
         ctx["cli"]["stmt"] += __cli_init_repl_table(ctx["cli"]["conn"], table_name, cols_, **kwargs)
 
         # Create function and trigger AFTER INSERT
@@ -529,7 +528,7 @@ def srv_upload_table(ctx, cashreg, table, **kwargs):
         for r_ in recs_:
             op_ = r_[-1]
             if op_ == __REPL_OP_INIT: op_ = __REPL_OP_NEW
-            if op_act_ == None: op_act_ = op_
+            if not op_act_: op_act_ = op_
             if op_act_ != op_:
                 __apply_op_recs(ctx["srv"]["conn"], upld_tname_, upld_cols_, op_recs_, op_act_, ident_cols_, **kwargs)
                 op_recs_ = []
@@ -548,12 +547,9 @@ def srv_upload_table(ctx, cashreg, table, **kwargs):
 
         return max_id_
 
-    while (last_upld_id_ < max_upld_id_):
-        try:
-            last_upld_id_ = __do_upload(ctx, cashreg, table, max_upld_id_, **kwargs)
-            _dbc.m.db_apply_commit(ctx, commit=True)
-        finally:
-            ctx["srv"]["conn"].rollback()
+    while last_upld_id_ < max_upld_id_:
+        last_upld_id_ = __do_upload(ctx, cashreg, table, max_upld_id_, **kwargs)
+        _dbc.m.db_apply_commit(ctx, commit=True)
 
 
 def srv_upload(ctx, **kwargs):
@@ -567,7 +563,6 @@ def srv_upload(ctx, **kwargs):
 # TODO: do reload modules
 def replicate_up(ctx, **kwargs):
     tables_ = __srv_cashreg_repl_tables(ctx["srv"]["conn"], ctx["cashreg_id"], **kwargs)
-    # _log.debug("tabs: %s\ncount=%s" % (tables_, len(tables_)))
 
     def limit_max_id(max_id, last_id):
         RECS_MAX = 1000
@@ -577,14 +572,10 @@ def replicate_up(ctx, **kwargs):
         return max_id
 
     for t_ in tables_:
-        # _log.debug("T: %s" % (t_["table_name"]))
-
         # Retrieve and check repl up max ID for the table
         cli_repl_table_name_ = __cli_repl_table_name(t_["table_name"])
         max_repl_id_ = _t.m.nvl(ctx["cli"]["conn"].select_one(
-            "SELECT max(%s) FROM %s" % (__REPL_COL_ID["col_name"], cli_repl_table_name_),
-            **kwargs, )[0], -1)
-        # _log.debug("max_repl_id=%s, last_repl_id=%s" % (max_repl_id_, t_["last_repl_id"]))
+            "SELECT max(%s) FROM %s" % (__REPL_COL_ID["col_name"], cli_repl_table_name_), **kwargs, )[0], -1)
         if max_repl_id_ <= t_["last_repl_id"]: continue
 
         max_repl_id_ = limit_max_id(max_repl_id_, t_["last_repl_id"])
@@ -593,7 +584,6 @@ def replicate_up(ctx, **kwargs):
 
         #
         col_defs_ = _dbu.m.db_table_columns(ctx["cli"]["conn"], cli_repl_table_name_, **kwargs)
-        # _log.debug("col_defs=%s" % (col_defs_))
         cols_ = _t.m.dalv(col_defs_, "col_name")
 
         # Retrieve all records to be replicated to SERVER
@@ -601,7 +591,6 @@ def replicate_up(ctx, **kwargs):
             ctx["cli"]["conn"], cli_repl_table_name_, cols_,
             [__REPL_COL_ID["col_name"] + " between %s and %s", ],
             [__REPL_COL_ID["col_name"], ], [t_["last_repl_id"] + 1, max_repl_id_, ], **kwargs)
-        # _log.debug("recs=%s" % recs_)
 
         # Insert records into SERVER replication (up) table
         _dbu.m.db_table_insert_rows(ctx["srv"]["conn"], __srv_repl_up_tname(t_["table_name"], ctx["cashreg_id"]), cols_, recs_, **kwargs)
@@ -728,13 +717,11 @@ def __main():
     __SDB = {
         "USER": "ffba_170908",
         "PASSWORD": "f__",
-        # "DATABASE": "ffba_prod",
-        # "HOST": "eltacafe.ru",
     }
 
     # __CDB = {
-    #     "USER": "eltapos",
-    #     "PASSWORD": "e__",
+    #     "USER": "",
+    #     "PASSWORD": "",
     # }
 
     ctx_ = {
@@ -749,13 +736,9 @@ def __main():
         # },
     }
 
-    # _log.debug("cli encoding=%s" % (ctx_["cli"]["conn"].encoding()))
-
     # cols_ = re.findall(r"[\w]+", "id,; one:, two   , three")
-    # _log.debug("cols=%s." % (cols_))
 
     # replicate_down(ctx_, 3)
-    # _log.debug("complete")
     # replicate_down(ctx_, 3)
 
     # create_repl_objects(ctx_, 4)

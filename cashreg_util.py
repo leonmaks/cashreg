@@ -18,10 +18,9 @@ _log = logging.getLogger(__name__)
 def __main():
 
     __SDB = {
-        'USER': 'ffba_eltapos_001',
-        'PASSWORD': 'q8FVn$3EGjq6PJ4u',
-        'DATABASE': 'ffba_prod',
-        'HOST': '46.4.8.99',
+        'USER': 'ffba_170908',
+        'PASSWORD': 'f__',
+        'DATABASE': 'ffba_170908',
     }
 
     # ctx_ = {

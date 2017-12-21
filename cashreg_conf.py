@@ -1,12 +1,12 @@
-LOCAL_ID = 'eltapos_001'
+LOCAL_ID = "eltapos_001"
 EXEC_INTERVAL = 15000
 STOP_CHECK_INTERVAL = 500
 REWRITE_MODULES = False
 
 
 SERVER_DB = {
-    'USER': 'ffba_170908',
-    'PASSWORD': 'f__',
+    "USER": "ffba_170908",
+    "PASSWORD": "f__",
 }
 
 
